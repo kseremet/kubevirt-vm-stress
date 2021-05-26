@@ -1,0 +1,87 @@
+apiVersion: kubevirt.io/v1alpha3
+kind: VirtualMachine
+metadata:
+  labels:
+    app: "kubevirt-vm-stress"
+    workload.template.kubevirt.io/server: "true"
+  name: "stress-{{ name_suffix }}"
+  namespace: "{{ namespace }}"
+spec:
+  dataVolumeTemplates:
+  - metadata:
+      name: "stress-{{ name_suffix }}"
+    spec:
+      pvc:
+        accessModes:
+        - ReadWriteMany
+        resources:
+          requests:
+            storage: "{{ rootdisk_size }}"
+{% if storage_class is defined %}
+        storageClassName: "{{ storage_class }}"
+{% endif %}
+        volumeMode: Block
+      source:
+        pvc:
+          name: "{{ source_pvc }}"
+          namespace: "{{ namespace }}"
+  running: {{ running }}
+  template:
+    metadata:
+      labels:
+        vm.kubevirt.io/name: "stress-{{ name_suffix }}"
+        workload.template.kubevirt.io/server: "true"
+    spec:
+      domain:
+        cpu:
+          cores: {{ cores|int }}
+          sockets: {{ sockets|int }}
+          threads: 1
+        devices:
+          disks:
+          - disk:
+              bus: virtio
+            name: cloudinitdisk
+          - bootOrder: 1
+            disk:
+              bus: virtio
+            name: rootdisk
+          interfaces:
+          - masquerade: {}
+            model: virtio
+            name: nic-0
+          networkInterfaceMultiqueue: true
+          rng: {}
+        machine:
+          type: pc-q35-rhel8.2.0
+        resources:
+          requests:
+            memory: {{ memory }}
+      evictionStrategy: LiveMigrate
+      hostname: stress-{{ name_suffix }}
+      networks:
+      - name: nic-0
+        pod: {}
+      terminationGracePeriodSeconds: 180
+      volumes:
+      - cloudInitNoCloud:
+          userData: |
+            #cloud-config
+            user: {{ user }}
+{% if password is defined %}
+            password: {{ password }}
+            chpasswd:
+              expire: false
+{% endif %}
+            ssh_authorized_keys:
+              - {{lookup('file', ssh_public_key_file)}}
+{% if ssh_keys is defined %}
+{% for ssh_key in ssh_keys %}
+              - {{ssh_key}}
+{% endfor %}
+{% endif %}
+        name: cloudinitdisk
+      - dataVolume:
+          name: "stress-{{ name_suffix }}"
+        name: rootdisk
+

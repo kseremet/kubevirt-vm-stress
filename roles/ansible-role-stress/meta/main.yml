@@ -1,0 +1,17 @@
+---
+galaxy_info:
+  author: Risto Laurikainen
+  description: Runs a stress test on a server
+  company: CSC
+  license: MIT
+  min_ansible_version: 2.0
+  platforms:
+  - name: EL
+    versions:
+    - 7
+  - name: Debian
+    versions:
+    - 9
+  galaxy_tags:
+  - system
+  dependencies: []

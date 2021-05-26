@@ -1,0 +1,23 @@
+- set_fact:
+    name_suffix: vm{{idx|int}}
+    memory: "{{ memory }}"
+    cores: "{{ cores }}"
+
+- name: Ensure VM is created
+  community.kubernetes.k8s:
+    state: present
+    definition: "{{ lookup('template', 'vm.yaml.j2')|from_yaml }}"
+
+- name: Ensure a k8s service with ClusterIP exists to expose given ports
+  community.kubernetes.k8s:
+    state: present
+    definition: "{{ lookup('template', 'service.yaml.j2')|from_yaml }}"
+
+- name: Add VM into Ansible inventory
+  add_host:
+    hostname: "stress-{{ name_suffix }}.{{ namespace }}"
+    groups:
+    - stress-vms
+    ansible_host: "stress-{{ name_suffix }}.{{ namespace }}"
+    ansible_user: "{{ user }}"
+    ansible_ssh_private_key_file: "{{ ssh_private_key_file }}"

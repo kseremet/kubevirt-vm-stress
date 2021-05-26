@@ -1,0 +1,31 @@
+---
+- hosts: localhost
+  gather_facts: no
+  collections:
+    - community.kubernetes
+    - operator_sdk.util
+  tasks:
+    - import_role:
+        name: vmpool
+
+- hosts: stress-vms
+  gather_facts: no
+  tasks:
+    - name: Wait for vm(s) to become reachable
+      wait_for_connection:
+        delay: 1
+        timeout: 10
+
+- hosts: stress-vms
+  gather_facts: no
+  tasks:
+    - import_role:
+        name: ansible-role-stress
+      vars:
+        cpu_workers: "1"
+        hdd_workers: "1"
+        memrate_workers: "1"
+        bytes_per_hdd_worker: "1G"
+        cpu_load: "50"
+        memory_write_mbs: "10"
+      become: yes
